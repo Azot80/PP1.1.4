@@ -12,10 +12,13 @@ public class Util {
     private final static String URL = CONNECTION_STRING + DB_NAME + UNICODETIMEZONE_STRING;
     private final static String USERNAME = "root";
     private final static String PASSWORD = "root";
+    private Connection conn;
 
     public Connection openConnection() {
         try {
-            return DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            conn.setAutoCommit(false);
+            return conn;
         } catch (SQLException e) {
             System.out.println("Нет связи с БД: " + DB_NAME + e.getMessage());
         }

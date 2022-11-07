@@ -2,7 +2,6 @@ package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,15 +13,14 @@ public class UserDaoJDBCImpl implements UserDao {
     public static final String COLUMN_NAME = "name";
     public static final String COLUMN_LASTNAME = "lastName";
     public static final String COLUMN_AGE = "age";
-    private static Connection conn;
 
     public UserDaoJDBCImpl() {
-        Util util = new Util();
-        conn = util.openConnection();
+
     }
 
     public void createUsersTable() {
-        try (Statement statement = conn.createStatement()) {
+        Util util = new Util();
+        try (Connection connection = util.openConnection();  Statement statement = connection.createStatement()) {
             String createUsersTableQuery = "CREATE TABLE " + TABLE_NAME +
                     "(" + COLUMN_ID + " BIGINT(19) NOT NULL AUTO_INCREMENT, " +
                     COLUMN_NAME + " VARCHAR(45) NOT NULL, " +
@@ -36,9 +34,17 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public void dropUsersTable() {
-        try (Statement statement = conn.createStatement()) {
+        Util util = new Util();
+        try (Connection connection = util.openConnection(); Statement statement = connection.createStatement()) {
+            Savepoint savePoint = connection.setSavepoint("savePoint dropUsersTable");
             String dropUsersTableQuery = "DROP TABLE IF EXISTS " + TABLE_NAME;
-            statement.executeUpdate(dropUsersTableQuery);
+            try {
+                statement.executeUpdate(dropUsersTableQuery);
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback(savePoint);
+                System.out.println("Запрос удаления таблицы не проршел: " + e.getMessage());
+            }
         } catch (SQLException e) {
             System.out.println("Запрос удаления таблицы не проршел: " + e.getMessage());
         }
@@ -50,32 +56,46 @@ public class UserDaoJDBCImpl implements UserDao {
                 COLUMN_AGE +
                 ")" +
                 "VALUES (?, ?, ?)";
-
-        try (PreparedStatement preparedStatement = conn.prepareStatement(insertUserQuery)) {
+        Util util = new Util();
+        try (Connection connection = util.openConnection(); PreparedStatement preparedStatement = connection.prepareStatement(insertUserQuery)) {
+            Savepoint savePoint = connection.setSavepoint("savePoint saveUser");
             preparedStatement.setString(1, name);
             preparedStatement.setString(2, lastName);
             preparedStatement.setByte(3, age);
-            preparedStatement.executeUpdate();
+            try {
+                preparedStatement.executeUpdate();
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback(savePoint);
+                System.out.println("Запрос на создание нового user не проршел: " + e.getMessage());
+            }
         } catch (SQLException e) {
-            System.out.println("Запрос на создание нового user не проршел: " + e.getMessage());
+            System.out.println("Запрос удаления таблицы не проршел: " + e.getMessage());
         }
     }
 
     public void removeUserById(long id) {
         String deleteByUserIDQuery = "DELETE FROM " + TABLE_NAME + " WHERE " + COLUMN_ID + " = ?";
-
-        try (PreparedStatement preparedStatement = conn.prepareStatement(deleteByUserIDQuery)) {
+        Util util = new Util();
+        try (Connection connection = util.openConnection(); PreparedStatement preparedStatement = connection.prepareStatement(deleteByUserIDQuery)) {
+            Savepoint savePoint = connection.setSavepoint("savePoint removeUserById");
             preparedStatement.setLong(COLUMN_ID_NUM, id);
-            preparedStatement.executeUpdate();
+            try {
+                preparedStatement.executeUpdate();
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback(savePoint);
+                System.out.println("Запрос удаление user не проршел: " + e.getMessage());
+            }
         } catch (SQLException e) {
-            System.out.println("Запрос удаление user не проршел: " + e.getMessage());
+            System.out.println("Запрос удаления таблицы не проршел: " + e.getMessage());
         }
     }
 
     public List<User> getAllUsers() {
         String getUserQuery = "SELECT * FROM " + TABLE_NAME;
-
-        try (PreparedStatement preparedStatement = conn.prepareStatement(getUserQuery); ResultSet result = preparedStatement.executeQuery()) {
+        Util util = new Util();
+        try (Connection connection = util.openConnection(); PreparedStatement preparedStatement = connection.prepareStatement(getUserQuery); ResultSet result = preparedStatement.executeQuery()) {
             List<User> users = new ArrayList<>();
             while (result.next()) {
                 User user = new User();
@@ -86,7 +106,6 @@ public class UserDaoJDBCImpl implements UserDao {
                 users.add(user);
             }
             return users;
-
         } catch (SQLException e) {
             System.out.println("Запрос не проршел: " + e.getMessage());
             return null;
@@ -95,13 +114,18 @@ public class UserDaoJDBCImpl implements UserDao {
 
     public void cleanUsersTable() {
         String cleaUsersTableQuery = "TRUNCATE TABLE " + TABLE_NAME;
-
-        try (PreparedStatement preparedStatement = conn.prepareStatement(cleaUsersTableQuery)) {
-            preparedStatement.executeUpdate();
+        Util util = new Util();
+        try (Connection connection = util.openConnection(); PreparedStatement preparedStatement = connection.prepareStatement(cleaUsersTableQuery)) {
+            Savepoint savePoint = connection.setSavepoint("savePoint cleanUsersTable");
+            try {
+                preparedStatement.executeUpdate();
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback(savePoint);
+                System.out.println("Запрос на очистку таблицы users не проршел: " + e.getMessage());
+            }
         } catch (SQLException e) {
-            System.out.println("Запрос на очистку таблицы users не проршел: " + e.getMessage());
+            System.out.println("Запрос удаления таблицы не проршел: " + e.getMessage());
         }
     }
 }
-
-
