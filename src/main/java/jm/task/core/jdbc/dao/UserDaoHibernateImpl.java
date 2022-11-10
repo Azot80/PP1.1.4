@@ -14,49 +14,77 @@ public class UserDaoHibernateImpl implements UserDao {
     @Override
     public void createUsersTable() {
         try (Session session = Util.getSessionFactory().openSession()) {
-            String sql = "CREATE TABLE IF NOT EXISTS users " +
-                    "(id BIGINT(19) NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
-                    "name VARCHAR(45) NOT NULL, lastName VARCHAR(45) NOT NULL, " +
-                    "age TINYINT(0) NOT NULL)";
+            try {
+                String sql = "CREATE TABLE IF NOT EXISTS users " +
+                        "(id BIGINT(19) NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
+                        "name VARCHAR(45) NOT NULL, lastName VARCHAR(45) NOT NULL, " +
+                        "age TINYINT(0) NOT NULL)";
 
-            session.beginTransaction();
-            session.createSQLQuery(sql).addEntity(User.class).executeUpdate();
-            session.getTransaction().commit();
+                session.beginTransaction();
+                session.createSQLQuery(sql).addEntity(User.class).executeUpdate();
+                session.getTransaction().commit();
+            } catch (Exception e) {
+                if (session.getTransaction().isActive()) {
+                    e.printStackTrace();
+                    session.beginTransaction().rollback();
+                }
+            }
         }
     }
 
     @Override
     public void dropUsersTable() {
         try (Session session = Util.getSessionFactory().openSession()) {
-            String sql = "DROP TABLE IF EXISTS users";
+            try {
+                String sql = "DROP TABLE IF EXISTS users";
 
-            session.beginTransaction();
-            session.createSQLQuery(sql).addEntity(User.class).executeUpdate();
-            session.getTransaction().commit();
+                session.beginTransaction();
+                session.createSQLQuery(sql).addEntity(User.class).executeUpdate();
+                session.getTransaction().commit();
+            } catch (Exception e) {
+                if (session.getTransaction().isActive()) {
+                    e.printStackTrace();
+                    session.beginTransaction().rollback();
+                }
+            }
         }
     }
 
     @Override
     public void saveUser(String name, String lastName, byte age) {
         try (Session session = Util.getSessionFactory().openSession()) {
-            User user = new User();
-            user.setName(name);
-            user.setLastName(lastName);
-            user.setAge(age);
+            try {
+                User user = new User();
+                user.setName(name);
+                user.setLastName(lastName);
+                user.setAge(age);
 
-            session.beginTransaction();
-            session.save(user);
-            session.getTransaction().commit();
+                session.beginTransaction();
+                session.save(user);
+                session.getTransaction().commit();
+            } catch (Exception e) {
+                if (session.getTransaction().isActive()) {
+                    e.printStackTrace();
+                    session.beginTransaction().rollback();
+                }
+            }
         }
     }
 
     @Override
     public void removeUserById(long id) {
         try (Session session = Util.getSessionFactory().openSession()) {
-            session.beginTransaction();
-            User selectedUser = session.load(User.class, id);
-            session.delete(selectedUser);
-            session.getTransaction().commit();
+            try {
+                session.beginTransaction();
+                User selectedUser = session.load(User.class, id);
+                session.delete(selectedUser);
+                session.getTransaction().commit();
+            } catch (Exception e) {
+                if (session.getTransaction().isActive()) {
+                    e.printStackTrace();
+                    session.beginTransaction().rollback();
+                }
+            }
         }
     }
 
@@ -70,9 +98,16 @@ public class UserDaoHibernateImpl implements UserDao {
     @Override
     public void cleanUsersTable() {
         try (Session session = Util.getSessionFactory().openSession()) {
-            session.beginTransaction();
-            session.createSQLQuery("truncate table users").executeUpdate();
-            session.getTransaction().commit();
+            try {
+                session.beginTransaction();
+                session.createSQLQuery("TRUNCATE TABLE users").executeUpdate();
+                session.getTransaction().commit();
+            } catch (Exception e) {
+                if (session.getTransaction().isActive()) {
+                    e.printStackTrace();
+                    session.beginTransaction().rollback();
+                }
+            }
         }
     }
 }
